@@ -1,3 +1,5 @@
+assertpy
+cerberus
 faker
 pytest
 requests

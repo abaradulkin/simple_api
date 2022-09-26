@@ -1,9 +1,6 @@
 import pytest
 from faker import Faker
 
-from petstore.assertions import assert_success_response
-from petstore.objects import create_pet
-
 
 class TestSmokeUserCreation:
     @pytest.fixture

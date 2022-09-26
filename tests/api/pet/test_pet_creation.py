@@ -1,8 +1,9 @@
+from cerberus import Validator
 import pytest
 import schemathesis
 
-from petstore.assertions import assert_success_response
-from petstore.objects import create_pet
+from tests.api.assertions import assert_pet_response
+from petstore.objects import create_pet, PET_SCHEMA
 
 
 schema = schemathesis.from_uri("https://petstore.swagger.io/v2/swagger.json")
@@ -10,28 +11,29 @@ schema = schemathesis.from_uri("https://petstore.swagger.io/v2/swagger.json")
 
 class TestAddPetToPetStore:
     def test_add_pet(self, petstore_api):
+        """ Test pet creation with all parameters from model"""
         body = create_pet()
-        response = petstore_api.post("/pet", body=body)
-        assert_success_response(response, body)
-        response = petstore_api.get(f"/pet/{response.json()['id']}")
-        assert_success_response(response, body)
+        response = petstore_api.create_pet(payload=body)
+        assert_pet_response(response, body)
+        response = petstore_api.get(f"/pet/{body['id']}")
+        assert_pet_response(response, body)
+
+    def test_pet_response_scheme(self, petstore_api):
+        """ Test pet creation response schema"""
+        body = create_pet()
+        response = petstore_api.create_pet(payload=body)
+        # First method
+        assert schema["/pet"]["POST"].is_response_valid(response)
+        # Second method
+        assert Validator(PET_SCHEMA).validate(response.json())
 
     def test_add_pet_without_photo_url(self, petstore_api, fake):
-        name = fake.first_name()
-        pet_id = fake.random_int()
-        status = "availiable"
-        body = {
-            "id": pet_id,
-            "name": name,
-            "status": status
-
-        }
-        response = petstore_api.post("/pet", body=body)
-        assert response.status_code == 200
-        assert response.json()["id"] == pet_id
-        assert response.json()["name"] == name
-        assert response.json()["status"] == status
-        assert not response.json()["photoUrls"]
+        """ Test pet creation without photo url"""
+        body = create_pet()
+        response = petstore_api.create_pet(payload=body)
+        assert_pet_response(response, body)
+        response = petstore_api.get(f"/pet/{body['id']}")
+        assert_pet_response(response, body)
 
     def test_add_pet_without_id(self, petstore_api, fake):
         name = fake.first_name()
